@@ -7,7 +7,8 @@ $validated = ($user == $config['admin_user']) && password_verify($pass, $config[
 if (!$validated) {
   header('WWW-Authenticate: Basic realm="RaspAP"');
   header('HTTP/1.0 401 Unauthorized');
-  die ("Not authorized");
+  echo "<p>You must login as {$config['admin_user']} to configure RaspAP.</p>";
+  exit;
 }
 
 ?>
