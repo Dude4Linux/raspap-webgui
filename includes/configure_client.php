@@ -6,13 +6,15 @@
 */
 function DisplayWPAConfig(){
   $status = new StatusMessages();
-  $scanned_networks = array();
+  // $scanned_networks = array();
+  $networks = array();
 
   // Find currently configured networks
   exec(' sudo cat ' . RASPI_WPA_SUPPLICANT_CONFIG, $known_return);
 
   $network = null;
   $ssid = null;
+  $wlan = null;
 
   foreach($known_return as $line) {
     if (preg_match('/network\s*=/', $line)) {
@@ -107,12 +109,21 @@ function DisplayWPAConfig(){
     }
   }
 
-  exec( 'sudo wpa_cli scan' );
+  exec( 'sudo wpa_cli scan',$scan_return );
+  foreach( $scan_return as $line ) {
+    if (preg_match( "/Selected interface '(.*?)'/", $line, $result )) {
+    $wlan = $result[1];
+    }
+  }
+
   sleep(3);
   exec( 'sudo wpa_cli scan_results',$scan_return );
-  for( $shift = 0; $shift < 2; $shift++ ) {
+  for( $shift = 0; $shift < 4; $shift++ ) {
     array_shift($scan_return);
   }
+  // Debugging
+  // print_r($scan_return);
+
   // display output
   foreach( $scan_return as $network ) {
     $arrNetwork = preg_split("/[\t]+/",$network);
@@ -120,6 +131,10 @@ function DisplayWPAConfig(){
       $networks[$arrNetwork[4]]['visible'] = true;
       $networks[$arrNetwork[4]]['channel'] = ConvertToChannel($arrNetwork[1]);
       // TODO What if the security has changed?
+    } elseif ($arrNetwork[4] === '\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00') {
+      // Skip null ESSID:
+    } elseif ($arrNetwork[4] === 'RaspRanger') {
+      // Skip hostapd ESSID:
     } else {
       $networks[$arrNetwork[4]] = array(
         'configured' => false,
@@ -132,12 +147,14 @@ function DisplayWPAConfig(){
     }
   }
 
-  exec( 'iwconfig wlan0', $iwconfig_return );
+  exec( 'iwconfig ' . $wlan, $iwconfig_return );
   foreach ($iwconfig_return as $line) {
-    if (preg_match( '/ESSID:\"(.+)\"/i',$line,$iwconfig_ssid )) {
+    if (preg_match( '/ESSID:\"(.*?)\"/i',$line,$iwconfig_ssid )) {
       $networks[$iwconfig_ssid[1]]['connected'] = true;
     }
   }
+  // Debugging
+  // print_r($networks);
 ?>
 
   <div class="row">
