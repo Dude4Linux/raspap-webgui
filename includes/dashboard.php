@@ -8,8 +8,8 @@ function DisplayDashboard(){
 
   $status = new StatusMessages();
 
-  exec( 'ifconfig wlan0', $return );
-  exec( 'iwconfig wlan0', $return );
+  exec( 'ifconfig wlan1', $return );
+  exec( 'iwconfig wlan1', $return );
 
   $strWlan0 = implode( " ", $return );
   $strWlan0 = preg_replace( '/\s\s+/', ' ', $strWlan0 );
@@ -29,39 +29,48 @@ function DisplayDashboard(){
   $strRxBytes = $result[1];
   preg_match( '/TX Bytes:(\d+ \(\d+.\d+ [K|M|G]iB\))/i',$strWlan0,$result );
   $strTxBytes = $result[1];
+  preg_match( '/RX .*? errors:(\d+)/',$strWlan0,$result );
+  $strRxErrors = $result[1];
+  preg_match( '/TX .*? errors:(\d+)/',$strWlan0,$result );
+  $strTxErrors = $result[1];
+  preg_match( '/RX .*? dropped:(\d+)/',$strWlan0,$result );
+  $strRxDropped = $result[1];
+  preg_match( '/TX .*? dropped:(\d+)/',$strWlan0,$result );
+  $strTxDropped = $result[1];
   preg_match( '/ESSID:\"([a-zA-Z0-9\s]+)\"/i',$strWlan0,$result );
   $strSSID = str_replace( '"','',$result[1] );
   preg_match( '/Access Point: ([0-9a-f:]+)/i',$strWlan0,$result );
   $strBSSID = $result[1];
-  preg_match( '/Bit Rate=([0-9\.]+ Mb\/s)/i',$strWlan0,$result );
+  preg_match( '/Bit Rate[:=]([0-9\.]+ Mb\/s)/i',$strWlan0,$result );
   $strBitrate = $result[1];
   preg_match( '/Tx-Power=([0-9]+ dBm)/i',$strWlan0,$result );
   $strTxPower = $result[1];
   preg_match( '/Link Quality=([0-9]+)/i',$strWlan0,$result );
   $strLinkQuality = $result[1];
-  preg_match( '/Signal level=(-?[0-9]+ dBm)/i',$strWlan0,$result );
+//  preg_match( '/Signal level=(-?[0-9]+ dBm)/i',$strWlan0,$result );
+  preg_match( '/Signal level=(-?[0-9]+)/i',$strWlan0,$result );
   $strSignalLevel = $result[1];
   preg_match('/Frequency:(\d+.\d+ GHz)/i',$strWlan0,$result);
   $strFrequency = $result[1];
 
   if(strpos( $strWlan0, "UP" ) !== false && strpos( $strWlan0, "RUNNING" ) !== false ) {
     $status->addMessage('Interface is up', 'success');
-    $wlan0up = true;
+    $wlan1up = true;
   } else {
     $status->addMessage('Interface is down', 'warning');
   }
 
-  if( isset($_POST['ifdown_wlan0']) ) {
-    exec( 'ifconfig wlan0 | grep -i running | wc -l',$test );
+  if( isset($_POST['ifdown_wlan1']) ) {
+    exec( 'ifconfig wlan1 | grep -i running | wc -l',$test );
     if($test[0] == 1) {
-      exec( 'sudo ifdown wlan0',$return );
+      exec( 'sudo ifdown wlan1',$return );
     } else {
       echo 'Interface already down';
     }
-  } elseif( isset($_POST['ifup_wlan0']) ) {
-    exec( 'ifconfig wlan0 | grep -i running | wc -l',$test );
+  } elseif( isset($_POST['ifup_wlan1']) ) {
+    exec( 'ifconfig wlan1 | grep -i running | wc -l',$test );
     if($test[0] == 0) {
-      exec( 'sudo ifup wlan0',$return );
+      exec( 'sudo ifup wlan1',$return );
     } else {
       echo 'Interface already up';
     }
@@ -78,16 +87,20 @@ function DisplayDashboard(){
                         <div class="panel panel-default">
                   <div class="panel-body">
                       <h4>Interface Information</h4>
-          <div class="info-item">Interface Name</div> wlan0</br>
+          <div class="info-item">Interface Name</div> wlan1</br>
           <div class="info-item">IP Address</div>     <?php echo $strIPAddress ?></br>
           <div class="info-item">Subnet Mask</div>    <?php echo $strNetMask ?></br>
           <div class="info-item">Mac Address</div>    <?php echo $strHWAddress ?></br></br>
 
                       <h4>Interface Statistics</h4>
           <div class="info-item">Received Packets</div>    <?php echo $strRxPackets ?></br>
-          <div class="info-item">Received Bytes</div>      <?php echo $strRxBytes ?></br></br>
+          <div class="info-item">Received Bytes</div>      <?php echo $strRxBytes ?></br>
+          <div class="info-item">Receive Errors</div>      <?php echo $strRxErrors ?></br>
+          <div class="info-item">Receive Dropped</div>     <?php echo $strRxDropped ?></br></br>
           <div class="info-item">Transferred Packets</div> <?php echo $strTxPackets ?></br>
           <div class="info-item">Transferred Bytes</div>   <?php echo $strTxBytes ?></br>
+          <div class="info-item">Transmit Errors</div>     <?php echo $strTxErrors ?></br>
+          <div class="info-item">Transmit Dropped</div>    <?php echo $strTxDropped ?></br>
         </div><!-- /.panel-body -->
         </div><!-- /.panel-default -->
                         </div><!-- /.col-md-6 -->
@@ -117,11 +130,11 @@ function DisplayDashboard(){
 
                   <div class="col-lg-12">
                  <div class="row">
-                    <form action="?page=wlan0_info" method="POST">
-                    <?php if ( !$wlan0up ) {
-                      echo '<input type="submit" class="btn btn-success" value="Start wlan0" name="ifup_wlan0" />';
+                    <form action="?page=wlan1_info" method="POST">
+                    <?php if ( !$wlan1up ) {
+                      echo '<input type="submit" class="btn btn-success" value="Start wlan1" name="ifup_wlan1" />';
                     } else {
-                echo '<input type="submit" class="btn btn-warning" value="Stop wlan0" name="ifdown_wlan0" />';
+                echo '<input type="submit" class="btn btn-warning" value="Stop wlan1" name="ifdown_wlan1" />';
               }
               ?>
               <input type="button" class="btn btn-outline btn-primary" value="Refresh" onclick="document.location.reload(true)" />
